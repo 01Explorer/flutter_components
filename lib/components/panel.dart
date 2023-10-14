@@ -8,7 +8,39 @@ class PanelWidget extends StatefulWidget {
   State<PanelWidget> createState() => _PanelWidgetState();
 }
 
-class _PanelWidgetState extends State<PanelWidget> {
+class _PanelWidgetState extends State<PanelWidget>
+    with TickerProviderStateMixin {
+  late final Tween<double> _animBlur;
+  late final Tween<double> _animOpacity;
+  late final Animation<double> _animBlurIn;
+  late final Animation<double> _animOpacityIn;
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    _animBlur = Tween<double>(begin: 0, end: 10.5);
+    _animBlurIn = _animBlur.animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _animOpacity = Tween<double>(begin: 0.3, end: 1);
+    _animOpacityIn = _animOpacity.animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+
+    _controller.repeat(reverse: true);
+  }
+
   List<List<int>> pixelsToPaint = [];
   late Size screenSize;
   @override
@@ -28,52 +60,60 @@ class _PanelWidgetState extends State<PanelWidget> {
               30,
               "Ola\nHey",
             );
-            return ListView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: ((constraints.maxHeight) / widget.pixelSize).floor(),
-              itemBuilder: (context, index) {
-                final List<int> pixels = pixelsToPaint[index];
-                return SizedBox(
-                  height: widget.pixelSize,
-                  child: ListView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      scrollDirection: Axis.horizontal,
-                      itemCount:
-                          (constraints.maxWidth / widget.pixelSize).floor(),
-                      itemBuilder: (context, index) {
-                        final bool isPainted = pixels[index] == 1;
-                        return Container(
-                          margin: const EdgeInsets.all(2),
-                          width: widget.pixelSize - 3,
-                          decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isPainted
-                                  ? Colors.red.shade900
-                                  : Colors.black,
-                              border: Border.all(
-                                  color: isPainted
-                                      ? Colors.grey
-                                      : Colors.grey.shade900),
-                              boxShadow: isPainted
-                                  ? const [
-                                      BoxShadow(
-                                        color: Colors.red,
-                                        blurRadius: 5,
-                                        spreadRadius: 2,
-                                      ),
-                                      BoxShadow(
-                                          color: Colors.white,
-                                          blurRadius: 15,
-                                          spreadRadius: 1,
-                                          blurStyle: BlurStyle.inner)
-                                    ]
-                                  : null),
-                        );
-                      }),
-                );
-              },
-            );
+            return AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) {
+                  return ListView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount:
+                        ((constraints.maxHeight) / widget.pixelSize).floor(),
+                    itemBuilder: (context, index) {
+                      final List<int> pixels = pixelsToPaint[index];
+                      return SizedBox(
+                        height: widget.pixelSize,
+                        child: ListView.builder(
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            scrollDirection: Axis.horizontal,
+                            itemCount: (constraints.maxWidth / widget.pixelSize)
+                                .floor(),
+                            itemBuilder: (context, index) {
+                              final bool isPainted = pixels[index] == 1;
+                              return Container(
+                                margin: const EdgeInsets.all(2),
+                                width: widget.pixelSize - 3,
+                                decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isPainted
+                                        ? Colors.red.shade900
+                                            .withOpacity(_animOpacityIn.value)
+                                        : Colors.black,
+                                    border: Border.all(
+                                        color: isPainted
+                                            ? Colors.grey
+                                            : Colors.grey.shade900),
+                                    boxShadow: isPainted
+                                        ? [
+                                            BoxShadow(
+                                              color: Colors.red.withOpacity(
+                                                  _animOpacityIn.value),
+                                              blurRadius: 5,
+                                              spreadRadius: 2,
+                                            ),
+                                            BoxShadow(
+                                              color: Colors.white.withOpacity(
+                                                  _animOpacityIn.value),
+                                              blurRadius: _animBlurIn.value,
+                                              spreadRadius: 1,
+                                            )
+                                          ]
+                                        : null),
+                              );
+                            }),
+                      );
+                    },
+                  );
+                });
           },
         ),
       ),
